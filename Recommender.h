@@ -5,6 +5,7 @@
 #pragma once
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 class Recommender {
 private:
@@ -22,6 +23,7 @@ public:
     double getSimilarity(int itemI, int itemJ) const;
 
     double predictScore(int userId, int targetItem) const;
+    std::vector<std::pair<int,double>> recommendTopN(int userId, int n) const;
 };
 
 

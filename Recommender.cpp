@@ -1,6 +1,7 @@
 
 
 #include "Recommender.h"
+#include <algorithm>
 #include <cmath>
 
     void Recommender::addWatch(int userId, int animeId, double rating) {
@@ -121,3 +122,29 @@
         // userId is already handled via getWatched(userId), so each pair here
         // is (animeId, rating) for that one user's watch list
     }
+
+    std::vector<std::pair<int, double>> Recommender::recommendTopN(int userId, int n) const { //we pass the userId and n
+        std::vector<std::pair<int, double>> candidates; //we also set up an array as a return type and to store all candidates
+        const auto& watched = getWatched(userId); //we get a list of all watched animes
+
+        for (const auto& itemPair : itemToUsers) { //iterate through list and store animeId
+            int animeId = itemPair.first;
+
+            if (watched.find(animeId) != watched.end()) {
+                continue; //already watched, skip
+            }
+
+            double score = predictScore(userId, animeId);//score is from using userid and animeId to get the predicted score of anime we haven't seen.
+            candidates.push_back({animeId, score}); //we push the anime and its score into the vector
+        }
+
+        std::sort(candidates.begin(), candidates.end(),
+            [](const std::pair<int, double>& a, const std::pair<int,double>& b) {
+                return a.second > b.second;
+            }); //this is the lambda function used to sort it. it will return it in descending order
+
+        int actualN = std::min(n, (int)candidates.size()); // we end up deciding between the input of n or the actual number of n that we computed
+        return std::vector<std::pair<int, double>>(candidates.begin(), candidates.begin() + actualN); //we return a slice of candidates. The first actualN of them.
+    }
+
+
