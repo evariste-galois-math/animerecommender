@@ -15,7 +15,6 @@
     }
 
     const std::unordered_map<int, double>& Recommender::getWatched(int userId) const {
-
         auto it = userWatchList.find(userId);
 
         if (it != userWatchList.end()) {
