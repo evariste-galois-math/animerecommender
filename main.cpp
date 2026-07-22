@@ -2,30 +2,27 @@
 #include "Recommender.h"
 
 int main() {
-
     Recommender rec;
 
-    // Anime 100: users 1, 2, 3
-    rec.addWatch(1, 100);
-    rec.addWatch(2, 100);
-    rec.addWatch(3, 100);
+    // Anime 100: rated by users 1, 2, 3
+    rec.addWatch(1, 100, 5.0);
+    rec.addWatch(2, 100, 4.0);
+    rec.addWatch(3, 100, 3.0);
 
-    // Anime 101: users 2, 3, 4
-    rec.addWatch(2, 101);
-    rec.addWatch(3, 101);
-    rec.addWatch(4, 101);
+    // Anime 101: rated by users 2, 3, 4
+    rec.addWatch(2, 101, 5.0);
+    rec.addWatch(3, 101, 4.0);
+    rec.addWatch(4, 101, 5.0);
 
-    // Anime 102: users 1, 3
-    rec.addWatch(1, 102);
-    rec.addWatch(3, 102);
+    // Anime 102: rated by users 1, 3
+    rec.addWatch(1, 102, 4.0);
+    rec.addWatch(3, 102, 5.0);
 
     rec.buildSimilarityMatrix();
 
-    std::cout << "matrix sim(100,101): " << rec.getSimilarity(100, 101) << std::endl;
-    std::cout << "matrix sim(101,100): " << rec.getSimilarity(101, 100) << std::endl;
-    std::cout << "matrix sim(100,102): " << rec.getSimilarity(100, 102) << std::endl;
-    std::cout << "matrix sim(101,102): " << rec.getSimilarity(101, 102) << std::endl;
+    // Predict how much user 1 would like anime 101 (unwatched by user 1)
+    double score = rec.predictScore(1, 101);
+    std::cout << "Predicted score for user 1 on anime 101: " << score << std::endl;
 
     return 0;
-
 }

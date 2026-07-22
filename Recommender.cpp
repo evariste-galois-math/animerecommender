@@ -2,23 +2,26 @@
 
 #include "Recommender.h"
 #include <cmath>
-    void Recommender::addWatch(int userId, int animeId) {
-        userWatchList[userId].insert(animeId);
+
+    void Recommender::addWatch(int userId, int animeId, double rating) {
+        userWatchList[userId][animeId] = rating;
         itemToUsers[animeId].insert(userId);
     }
+
     void Recommender::removeWatch(int userId, int animeId) {
         userWatchList[userId].erase(animeId);
         itemToUsers[animeId].erase(userId);
     }
 
-    const std::unordered_set<int>& Recommender::getWatched(int userId) const {
+    const std::unordered_map<int, double>& Recommender::getWatched(int userId) const {
+
         auto it = userWatchList.find(userId);
 
         if (it != userWatchList.end()) {
             return it->second;
         }
 
-        static const std::unordered_set<int> empty;
+        static const std::unordered_map<int,double> empty;
         return empty;
     }
 
@@ -97,4 +100,24 @@
         //That would let us access the sim value. If that value is not there, we return 0. Otherwise, we return that similarity value.
     }
 
+    double Recommender::predictScore(int userId, int targetItem) const {
+        const auto& watched = getWatched(userId);
 
+        if (watched.empty()) {
+            return 0.0;
+        }
+
+        double numerator = 0.0;
+        double denominator = 0.0;
+
+        for (const auto& pair: watched) {
+            numerator += getSimilarity(targetItem, pair.first) * pair.second;
+            denominator += std::abs(getSimilarity(targetItem, pair.first));
+        }
+        if (denominator == 0.0) {
+            return 0.0;
+        }
+        return numerator / denominator;
+        // userId is already handled via getWatched(userId), so each pair here
+        // is (animeId, rating) for that one user's watch list
+    }

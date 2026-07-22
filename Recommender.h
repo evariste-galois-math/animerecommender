@@ -8,17 +8,20 @@
 
 class Recommender {
 private:
-    std::unordered_map<int, std::unordered_set<int>> userWatchList;
+    std::unordered_map<int, std::unordered_map<int, double>> userWatchList;
     std::unordered_map<int, std::unordered_set<int>> itemToUsers;
     std::unordered_map<int, std::unordered_map<int, double>> similarityMatrix;
+
 public:
-    void addWatch(int userId, int animeId);
+    void addWatch(int userId, int animeId, double rating);
     void removeWatch(int userId, int animeId);
-    const std::unordered_set<int>& getWatched(int userId) const;
+    const std::unordered_map<int, double>& getWatched(int userId) const;
 
     double cosineSimilarity(int ItemI, int itemJ) const;
     void buildSimilarityMatrix();
     double getSimilarity(int itemI, int itemJ) const;
+
+    double predictScore(int userId, int targetItem) const;
 };
 
 
