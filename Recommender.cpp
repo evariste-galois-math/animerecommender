@@ -76,8 +76,11 @@
 
                 //used that opposite ordering here
                 double sim = cosineSimilarity(itemI, itemJ);
-                similarityMatrix[itemI][itemJ] = sim;
-                similarityMatrix[itemJ][itemI] = sim;
+
+                if (sim > 0) {
+                    similarityMatrix[itemI][itemJ] = sim;
+                    similarityMatrix[itemJ][itemI] = sim;
+                }
             }
         }
     }
@@ -111,12 +114,15 @@
         double denominator = 0.0;
 
         for (const auto& pair: watched) {
-            numerator += getSimilarity(targetItem, pair.first) * pair.second;
-            denominator += std::abs(getSimilarity(targetItem, pair.first));
+            double sim = getSimilarity(targetItem, pair.first);
+            numerator += sim * pair.second;
+            denominator += std::abs(sim);
         }
+
         if (denominator == 0.0) {
             return 0.0;
         }
+
         return numerator / denominator;
         // userId is already handled via getWatched(userId), so each pair here
         // is (animeId, rating) for that one user's watch list
