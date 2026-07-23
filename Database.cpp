@@ -3,17 +3,17 @@
 
 #include <iostream>
 
-Database::Database(const std::string& filename) {
+    Database::Database(const std::string& filename) {
         int rc = sqlite3_open(filename.c_str(), &db);
 
         if (rc) {
-            std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
         }
 
         const char* createTABLESQL = "CREATE TABLE IF NOT EXISTS watches ("
-                                     "user_id INTEGER, "
-                                     "anime_id INTEGER, "
-                                     "rating REAL);";
+                                 "user_id INTEGER, "
+                                 "anime_id INTEGER, "
+                                 "rating REAL);";
 
         char* errMsg = nullptr;
         sqlite3_exec(db, createTABLESQL, nullptr, nullptr, &errMsg);

@@ -1,4 +1,4 @@
-// JikanClient.cpp
+
 #include "JikanClient.h"
 #include <curl/curl.h>
 #include <nlohmann/json_fwd.hpp>
@@ -6,17 +6,20 @@
 #include <iostream>
 using json = nlohmann::json;
 
+const std::string BASE_URL = "https://api.tenrai.org/v1";
+
 size_t JikanClient::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
     size_t totalSize = size * nmemb;
     output->append((char*)contents, totalSize);
     return totalSize;
 }
+
 std::string JikanClient::fetchAnime(int animeId) const {
     std::string response;
     CURL* curl = curl_easy_init();
 
     if (curl) {
-        std::string url = "https://api.jikan.moe/v4/anime/" + std::to_string(animeId);
+        std::string url = BASE_URL + "/anime/" + std::to_string(animeId);
         char errbuf[CURL_ERROR_SIZE] = {0};
 
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -51,15 +54,22 @@ AnimeInfo JikanClient::fetchAnimeParsed(int animeId) const {
         return AnimeInfo{animeId, "Unknown Title (Network Error)", 0.0};
     }
 
-    json parsed = json::parse(rawResponse, nullptr, false); // turn raw JSON string into a navigable object
+    json parsed = json::parse(rawResponse, nullptr, false);
 
     if (parsed.is_discarded() || !parsed.contains("data") || parsed["data"].is_null()) {
         return AnimeInfo{animeId, "Unknown Title (Rate Limited or Not Found)", 0.0};
     }
 
-    int id = parsed["data"].value("mal_id", animeId); // anime's numeric MAL ID
-    std::string title = parsed["data"].value("title", "Unknown Title"); // anime's display title
-    double score = parsed["data"].value("score", 0.0); // anime's average public rating
+    int id = parsed["data"].value("mal_id", animeId);
+    std::string title = parsed["data"].value("title", "Unknown Title");
+
+    // score can come back as JSON null instead of being missing, so .value() alone isn't safe here
+    double score;
+    if (parsed["data"].contains("score") && !parsed["data"]["score"].is_null()) {
+        score = parsed["data"]["score"].get<double>();
+    } else {
+        score = 0.0;
+    }
 
     return AnimeInfo{id, title, score};
 }
@@ -70,7 +80,7 @@ std::vector<AnimeInfo> JikanClient::searchAnime(const std::string& query) const 
 
     if (curl) {
         char* encodedQuery = curl_easy_escape(curl, query.c_str(), query.length());
-        std::string url = "https://api.jikan.moe/v4/anime?q=" + std::string(encodedQuery);
+        std::string url = BASE_URL + "/anime?q=" + std::string(encodedQuery);
         curl_free(encodedQuery);
 
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -101,10 +111,18 @@ std::vector<AnimeInfo> JikanClient::searchAnime(const std::string& query) const 
         return results;
     }
 
-    for (const auto& item: parsed["data"]) {
+    for (const auto& item : parsed["data"]) {
         int id = item.value("mal_id", 0);
         std::string title = item.value("title", "Unknown");
-        double score = item.value("score", 0.0);
+
+        // same null-safety issue as above — score can be explicitly null
+        double score;
+        if (item.contains("score") && !item["score"].is_null()) {
+            score = item["score"].get<double>();
+        } else {
+            score = 0.0;
+        }
+
         results.push_back(AnimeInfo{id, title, score});
     }
 

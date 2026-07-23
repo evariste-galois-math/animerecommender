@@ -10,6 +10,7 @@ struct WatchRecord {
     int animeId;
     double rating;
 };
+
 class Database {
 public:
     Database(const std::string& filename);
