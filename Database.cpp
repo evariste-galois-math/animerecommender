@@ -1,4 +1,3 @@
-
 #include "Database.h"
 
 #include <iostream>

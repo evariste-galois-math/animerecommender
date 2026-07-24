@@ -1,7 +1,6 @@
 
 #include "JikanClient.h"
 #include <curl/curl.h>
-#include <nlohmann/json_fwd.hpp>
 #include <nlohmann/json.hpp>
 #include <iostream>
 using json = nlohmann::json;

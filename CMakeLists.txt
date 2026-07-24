@@ -14,6 +14,20 @@ add_executable(anime_recommender_cpp main.cpp
         JikanClient.cpp
         JikanClient.h
         Database.cpp
-        Database.h)
+        Database.h
+        Server.cpp
+        Server.h)
 
 target_link_libraries(anime_recommender_cpp PRIVATE CURL::libcurl nlohmann_json::nlohmann_json SQLite::SQLite3)
+
+add_executable(anime_recommender_server server.cpp
+        Recommender.cpp
+        Recommender.h
+        JikanClient.cpp
+        JikanClient.h
+        Database.cpp
+        Database.h
+        Server.cpp
+        Server.h)
+
+target_link_libraries(anime_recommender_server PRIVATE CURL::libcurl nlohmann_json::nlohmann_json SQLite::SQLite3)
