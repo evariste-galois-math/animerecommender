@@ -1,56 +1,69 @@
 #include "Database.h"
-
 #include <iostream>
 
-    Database::Database(const std::string& filename) {
-        int rc = sqlite3_open(filename.c_str(), &db);
+Database::Database(const std::string& connectionString) {
+    conn = PQconnectdb(connectionString.c_str());
 
-        if (rc) {
-        std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
-        }
-
-        const char* createTABLESQL = "CREATE TABLE IF NOT EXISTS watches ("
-                                 "user_id INTEGER, "
-                                 "anime_id INTEGER, "
-                                 "rating REAL);";
-
-        char* errMsg = nullptr;
-        sqlite3_exec(db, createTABLESQL, nullptr, nullptr, &errMsg);
+    if (PQstatus(conn) != CONNECTION_OK) {
+        std::cerr << "Connection to database failed: " << PQerrorMessage(conn) << std::endl;
     }
 
-    Database::~Database() {
-        sqlite3_close(db);
+    const char* createTableSQL =
+        "CREATE TABLE IF NOT EXISTS watches ("
+        "user_id INTEGER, "
+        "anime_id INTEGER, "
+        "rating REAL);";
+
+    PGresult* res = PQexec(conn, createTableSQL);
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+        std::cerr << "Failed to create table: " << PQerrorMessage(conn) << std::endl;
+    }
+    PQclear(res);
+}
+
+Database::~Database() {
+    PQfinish(conn);
+}
+
+void Database::saveWatch(int userId, int animeId, double rating) {
+    std::string userIdStr = std::to_string(userId);
+    std::string animeIdStr = std::to_string(animeId);
+    std::string ratingStr = std::to_string(rating);
+
+    const char* paramValues[3] = { userIdStr.c_str(), animeIdStr.c_str(), ratingStr.c_str() };
+
+    const char* sql = "INSERT INTO watches (user_id, anime_id, rating) VALUES ($1, $2, $3);";
+
+    PGresult* res = PQexecParams(conn, sql, 3, nullptr, paramValues, nullptr, nullptr, 0);
+
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+        std::cerr << "Insert failed: " << PQerrorMessage(conn) << std::endl;
     }
 
-    void Database::saveWatch(int userId, int animeId, double rating) {
-        const char* sql = "INSERT INTO watches(user_id, anime_id, rating) VALUES (?, ?, ?);";
-        sqlite3_stmt* stmt;
+    PQclear(res);
+}
 
-        sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+std::vector<WatchRecord> Database::loadAllWatches() const {
+    std::vector<WatchRecord> results;
 
-        sqlite3_bind_int(stmt, 1, userId);
-        sqlite3_bind_int(stmt, 2, animeId);
-        sqlite3_bind_double(stmt, 3, rating);
+    const char* sql = "SELECT user_id, anime_id, rating FROM watches;";
+    PGresult* res = PQexec(conn, sql);
 
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    std::vector<WatchRecord> Database::loadAllWatches() const {
-        std::vector<WatchRecord> results;
-        const char* sql = "SELECT user_id, anime_id, rating FROM watches;";
-        sqlite3_stmt* stmt;
-
-        sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            int userId = sqlite3_column_int(stmt, 0);
-            int animeId = sqlite3_column_int(stmt, 1);
-            double rating = sqlite3_column_double(stmt, 2);
-
-            results.push_back(WatchRecord{userId, animeId, rating});
-        }
-
-        sqlite3_finalize(stmt);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        std::cerr << "Query failed: " << PQerrorMessage(conn) << std::endl;
+        PQclear(res);
         return results;
     }
+
+    int rows = PQntuples(res);
+    for (int i = 0; i < rows; i++) {
+        int userId = std::stoi(PQgetvalue(res, i, 0));
+        int animeId = std::stoi(PQgetvalue(res, i, 1));
+        double rating = std::stod(PQgetvalue(res, i, 2));
+
+        results.push_back(WatchRecord{userId, animeId, rating});
+    }
+
+    PQclear(res);
+    return results;
+}
